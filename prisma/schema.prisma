@@ -1,0 +1,201 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model School {
+  id           Int      @id @default(autoincrement())
+  name         String
+  address      String?
+  logoUrl      String?
+  academicYear String
+  createdAt    DateTime @default(now())
+}
+
+enum UserRole {
+  HEADMASTER
+  TEACHER
+  PARENT
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         UserRole
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  taughtSubjects     Subject[]           @relation("TeacherSubjects")
+  homeroomClasses    Class[]             @relation("HomeroomTeacher")
+  attendanceCreated  AttendanceSession[]
+  assessmentsCreated Assessment[]
+  gradesGiven        StudentGrade[]
+  linkedChildren     Student[]           @relation("ParentLink")
+  announcements      Announcement[]
+  sentMessages       Message[]           @relation("Sender")
+  receivedMessages   Message[]           @relation("Recipient")
+}
+
+model Student {
+  id          Int       @id @default(autoincrement())
+  name        String
+  studentCode String    @unique
+  dateOfBirth DateTime?
+  photoUrl    String?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  classId Int
+  class   Class @relation(fields: [classId], references: [id])
+
+  parentId Int?
+  parent   User? @relation("ParentLink", fields: [parentId], references: [id])
+
+  attendanceRecords AttendanceRecord[]
+  grades            StudentGrade[]
+}
+
+model Class {
+  id   Int    @id @default(autoincrement())
+  name String
+  year String
+
+  homeroomTeacherId Int?
+  homeroomTeacher   User? @relation("HomeroomTeacher", fields: [homeroomTeacherId], references: [id])
+
+  students   Student[]
+  subjects   Subject[]
+  attendance AttendanceSession[]
+}
+
+model Subject {
+  id   Int    @id @default(autoincrement())
+  name String
+
+  classId Int
+  class   Class @relation(fields: [classId], references: [id])
+
+  teacherId Int
+  teacher   User @relation("TeacherSubjects", fields: [teacherId], references: [id])
+
+  assessments        Assessment[]
+  attendanceSessions AttendanceSession[]
+
+  @@unique([classId, name])
+}
+
+model AttendanceSession {
+  id        Int      @id @default(autoincrement())
+  date      DateTime @db.Date
+  period    String?
+  createdAt DateTime @default(now())
+
+  classId Int
+  class   Class @relation(fields: [classId], references: [id])
+
+  subjectId Int?
+  subject   Subject? @relation(fields: [subjectId], references: [id])
+
+  createdById Int
+  createdBy   User @relation(fields: [createdById], references: [id])
+
+  records AttendanceRecord[]
+
+  @@unique([classId, date, subjectId, period])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+model AttendanceRecord {
+  id     Int              @id @default(autoincrement())
+  status AttendanceStatus
+  note   String?
+
+  sessionId Int
+  session   AttendanceSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  studentId Int
+  student   Student @relation(fields: [studentId], references: [id])
+
+  @@unique([sessionId, studentId])
+}
+
+enum AssessmentType {
+  EXAM
+  QUIZ
+  ASSIGNMENT
+  MIDTERM
+  FINAL
+  PROJECT
+}
+
+model Assessment {
+  id        Int            @id @default(autoincrement())
+  title     String
+  type      AssessmentType
+  date      DateTime       @db.Date
+  maxScore  Float
+  createdAt DateTime       @default(now())
+
+  subjectId Int
+  subject   Subject @relation(fields: [subjectId], references: [id])
+
+  createdById Int
+  createdBy   User @relation(fields: [createdById], references: [id])
+
+  grades StudentGrade[]
+
+  @@unique([subjectId, title])
+}
+
+model StudentGrade {
+  id        Int      @id @default(autoincrement())
+  score     Float?
+  remarks   String?
+  createdAt DateTime @default(now())
+
+  assessmentId Int
+  assessment   Assessment @relation(fields: [assessmentId], references: [id])
+
+  studentId Int
+  student   Student @relation(fields: [studentId], references: [id])
+
+  gradedById Int
+  gradedBy   User @relation(fields: [gradedById], references: [id])
+
+  @@unique([assessmentId, studentId])
+}
+
+model Announcement {
+  id        Int      @id @default(autoincrement())
+  title     String
+  content   String
+  target    String
+  createdAt DateTime @default(now())
+
+  authorId Int
+  author   User @relation(fields: [authorId], references: [id])
+}
+
+model Message {
+  id        Int       @id @default(autoincrement())
+  content   String
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  senderId Int
+  sender   User @relation("Sender", fields: [senderId], references: [id])
+
+  recipientId Int
+  recipient   User @relation("Recipient", fields: [recipientId], references: [id])
+}
