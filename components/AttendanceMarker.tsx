@@ -154,7 +154,7 @@ export function AttendanceMarker({
       </div>
 
       {/* Student list */}
-      <div className="flex-1 overflow-y-auto divide-y divide-slate-100 pb-24">
+      <div className="flex-1 overflow-y-auto divide-y divide-slate-100 pb-40">
         {records.map((record) => {
           const cfg = STATUS_CONFIG[record.status];
           const StatusIcon = cfg.icon;
@@ -194,9 +194,9 @@ export function AttendanceMarker({
         })}
       </div>
 
-      {/* Sticky save */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-4 py-3 z-20"
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.75rem)' }}
+      {/* Sticky save — positioned above the bottom nav bar */}
+      <div className="fixed bottom-16 left-0 right-0 bg-white border-t border-slate-200 px-4 py-3 z-20"
+        style={{ paddingBottom: '0.75rem' }}
       >
         <Button
           className="w-full bg-indigo-600 hover:bg-indigo-700 h-12 text-base font-semibold"

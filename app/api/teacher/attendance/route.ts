@@ -22,13 +22,25 @@ export async function GET() {
     include: {
       class: { select: { name: true } },
       subject: { select: { name: true } },
-      _count: { select: { records: true } },
+      records: { select: { status: true } },
     },
     orderBy: { date: 'desc' },
-    take: 20,
+    take: 30,
   });
 
-  return NextResponse.json({ success: true, data: sessions });
+  const data = sessions.map((s) => ({
+    id: s.id,
+    date: s.date,
+    class: s.class,
+    subject: s.subject,
+    total: s.records.length,
+    present: s.records.filter((r) => r.status === 'PRESENT').length,
+    absent: s.records.filter((r) => r.status === 'ABSENT').length,
+    late: s.records.filter((r) => r.status === 'LATE').length,
+    excused: s.records.filter((r) => r.status === 'EXCUSED').length,
+  }));
+
+  return NextResponse.json({ success: true, data });
 }
 
 export async function POST(req: NextRequest) {

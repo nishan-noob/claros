@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SearchableSelect } from '@/components/SearchableSelect';
 import { StudentAvatar } from '@/components/StudentAvatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Search, UserX, Link2 } from 'lucide-react';
@@ -241,18 +242,24 @@ function LinkParentForm({
 }) {
   const [parentId, setParentId] = useState(currentParentId ? String(currentParentId) : '');
 
+  const options = parents.map((p) => ({
+    value: String(p.id),
+    label: p.name,
+    sublabel: p.email,
+  }));
+
   return (
     <div className="space-y-4 pt-2">
       <div className="space-y-1.5">
         <Label>Parent Account</Label>
-        <Select value={parentId} onValueChange={(v) => v !== null && setParentId(v)}>
-          <SelectTrigger><SelectValue placeholder="Select parent" /></SelectTrigger>
-          <SelectContent>
-            {parents.map((p) => (
-              <SelectItem key={p.id} value={String(p.id)}>{p.name} ({p.email})</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <p className="text-xs text-slate-400">Start typing a name or email to filter</p>
+        <SearchableSelect
+          options={options}
+          value={parentId}
+          onChange={setParentId}
+          placeholder="Select parent…"
+          searchPlaceholder="Search by name or email…"
+        />
       </div>
       <Button
         className="w-full bg-indigo-600 hover:bg-indigo-700"

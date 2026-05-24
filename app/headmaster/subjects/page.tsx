@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { SearchableSelect } from '@/components/SearchableSelect';
 
 interface Subject { id: number; name: string; class: { id: number; name: string }; teacher: { id: number; name: string }; }
 interface ClassOption { id: number; name: string; }
@@ -142,6 +143,9 @@ function SubjectForm({ classes, teachers, initial, onSubmit, loading }: {
   const [classId, setClassId] = useState(initial ? String(initial.class.id) : '');
   const [teacherId, setTeacherId] = useState(initial ? String(initial.teacher.id) : '');
 
+  const classOptions = classes.map((c) => ({ value: String(c.id), label: c.name }));
+  const teacherOptions = teachers.map((t) => ({ value: String(t.id), label: t.name }));
+
   return (
     <div className="space-y-4 pt-2">
       <div className="space-y-1.5">
@@ -151,18 +155,24 @@ function SubjectForm({ classes, teachers, initial, onSubmit, loading }: {
       {!initial && (
         <div className="space-y-1.5">
           <Label>Class</Label>
-          <Select value={classId} onValueChange={(v) => v !== null && setClassId(v)}>
-            <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
-            <SelectContent>{classes.map((c) => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}</SelectContent>
-          </Select>
+          <SearchableSelect
+            options={classOptions}
+            value={classId}
+            onChange={setClassId}
+            placeholder="Select class…"
+            searchPlaceholder="Search class…"
+          />
         </div>
       )}
       <div className="space-y-1.5">
         <Label>Teacher</Label>
-        <Select value={teacherId} onValueChange={(v) => v !== null && setTeacherId(v)}>
-          <SelectTrigger><SelectValue placeholder="Select teacher" /></SelectTrigger>
-          <SelectContent>{teachers.map((t) => <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>)}</SelectContent>
-        </Select>
+        <SearchableSelect
+          options={teacherOptions}
+          value={teacherId}
+          onChange={setTeacherId}
+          placeholder="Select teacher…"
+          searchPlaceholder="Search teacher…"
+        />
       </div>
       <Button
         className="w-full bg-indigo-600 hover:bg-indigo-700"

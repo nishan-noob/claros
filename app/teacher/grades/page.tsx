@@ -12,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { StudentAvatar } from '@/components/StudentAvatar';
 import { LetterGradeBadge } from '@/components/LetterGradeBadge';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, BarChart2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/utils';
 
@@ -25,6 +25,7 @@ export default function TeacherGradesPage() {
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
   const [addAssessmentOpen, setAddAssessmentOpen] = useState(false);
+  const [reportAssessment, setReportAssessment] = useState<Assessment | null>(null);
   const [localGrades, setLocalGrades] = useState<Record<number, { score: string; remarks: string }>>({});
   const [saving, setSaving] = useState(false);
   const qc = useQueryClient();
@@ -37,13 +38,19 @@ export default function TeacherGradesPage() {
   const { data: assessmentsData, isLoading: loadingAssessments } = useQuery<{ success: boolean; data: Assessment[] }>({
     queryKey: ['teacher-assessments', selectedSubject?.id],
     queryFn: () => fetch(`/api/teacher/assessments?subjectId=${selectedSubject!.id}`).then((r) => r.json()),
-    enabled: !!selectedSubject && step === 'assessments',
+    enabled: !!selectedSubject && (step === 'assessments'),
   });
 
   const { data: gradesData, isLoading: loadingGrades } = useQuery<{ success: boolean; data: Grade[] }>({
     queryKey: ['teacher-grades', selectedAssessment?.id],
     queryFn: () => fetch(`/api/teacher/grades/${selectedAssessment!.id}`).then((r) => r.json()),
     enabled: !!selectedAssessment && step === 'grades',
+  });
+
+  const { data: reportGradesData, isLoading: loadingReportGrades } = useQuery<{ success: boolean; data: Grade[] }>({
+    queryKey: ['teacher-grades-report', reportAssessment?.id],
+    queryFn: () => fetch(`/api/teacher/grades/${reportAssessment!.id}`).then((r) => r.json()),
+    enabled: !!reportAssessment,
   });
 
   useEffect(() => {
@@ -94,6 +101,84 @@ export default function TeacherGradesPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  // Grade report view (drill-in per assessment)
+  if (reportAssessment) {
+    const reportGrades = reportGradesData?.data ?? [];
+    const scored = reportGrades.filter((g) => g.score !== null);
+    const avg = scored.length > 0
+      ? Math.round(scored.reduce((sum, g) => sum + ((g.score as number) / reportAssessment.maxScore) * 100, 0) / scored.length)
+      : null;
+    const highest = scored.length > 0 ? Math.max(...scored.map((g) => g.score as number)) : null;
+    const lowest = scored.length > 0 ? Math.min(...scored.map((g) => g.score as number)) : null;
+    const graded = scored.length;
+    const pending = reportGrades.length - graded;
+
+    return (
+      <div className="p-4 space-y-4">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => setReportAssessment(null)}>
+            <ArrowLeft className="w-4 h-4 mr-1" />Back
+          </Button>
+          <div>
+            <h1 className="text-base font-bold text-slate-900">{reportAssessment.title}</h1>
+            <p className="text-xs text-slate-500">{selectedSubject?.name} · Max: {reportAssessment.maxScore}</p>
+          </div>
+        </div>
+
+        {loadingReportGrades ? <Skeleton className="h-40 w-full" /> : (
+          <>
+            {/* Stats row */}
+            <div className="grid grid-cols-2 gap-3">
+              <Card className="bg-indigo-50 border-indigo-200">
+                <CardContent className="py-3 text-center">
+                  <p className="text-2xl font-bold text-indigo-700">{avg !== null ? `${avg}%` : '—'}</p>
+                  <p className="text-xs text-indigo-500 mt-0.5">Class Average</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="py-3 text-center">
+                  <p className="text-sm font-medium text-slate-700">{graded}/{reportGrades.length} graded</p>
+                  {pending > 0 && <p className="text-xs text-amber-500 mt-0.5">{pending} pending</p>}
+                  {highest !== null && <p className="text-xs text-slate-400 mt-0.5">High: {highest} · Low: {lowest}</p>}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Per-student list */}
+            <div className="space-y-1.5">
+              {reportGrades
+                .slice()
+                .sort((a, b) => (b.score ?? -1) - (a.score ?? -1))
+                .map((g) => {
+                  const pct = g.score !== null ? Math.round((g.score / reportAssessment.maxScore) * 100) : null;
+                  return (
+                    <Card key={g.id}>
+                      <CardContent className="py-2.5 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <StudentAvatar name={g.student.name} photoUrl={g.student.photoUrl} size="sm" />
+                          <p className="text-sm font-medium text-slate-700 truncate">{g.student.name}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {pct !== null ? (
+                            <>
+                              <span className="text-sm text-slate-500">{g.score}/{reportAssessment.maxScore}</span>
+                              <LetterGradeBadge percentage={pct} />
+                            </>
+                          ) : (
+                            <span className="text-xs text-slate-400 italic">Not graded</span>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+            </div>
+          </>
+        )}
+      </div>
+    );
   }
 
   if (step === 'subject') {
@@ -155,10 +240,17 @@ export default function TeacherGradesPage() {
                         <span className="text-xs text-slate-400">{formatDate(a.date)} · Max: {a.maxScore}</span>
                       </div>
                     </div>
-                    <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-600"
-                      onClick={(e) => { e.stopPropagation(); deleteAssessmentMutation.mutate(a.id); }}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" className="text-indigo-500 hover:text-indigo-700"
+                        title="View class report"
+                        onClick={(e) => { e.stopPropagation(); setReportAssessment(a); }}>
+                        <BarChart2 className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-600"
+                        onClick={(e) => { e.stopPropagation(); deleteAssessmentMutation.mutate(a.id); }}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
