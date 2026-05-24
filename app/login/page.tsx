@@ -7,7 +7,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { GraduationCap, Loader2 } from 'lucide-react';
+import { GraduationCap, Loader2, Zap } from 'lucide-react';
+
+const DEMO_ACCOUNTS = [
+  { label: 'Headmaster', email: 'headmaster@abc.school', color: 'bg-violet-100 text-violet-700 hover:bg-violet-200 border-violet-200' },
+  { label: 'Mr Smith', email: 'mrsmith@abc.school', color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-indigo-200' },
+  { label: 'Ms Jones', email: 'msjones@abc.school', color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-indigo-200' },
+  { label: 'Ms Brown', email: 'msbrown@abc.school', color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-indigo-200' },
+  { label: 'Ms Taylor', email: 'mstaylor@abc.school', color: 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200 border-indigo-200' },
+  { label: 'Parent 1', email: 'parent1@abc.school', color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200' },
+  { label: 'Parent 2', email: 'parent2@abc.school', color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200' },
+  { label: 'Parent 3', email: 'parent3@abc.school', color: 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 border-emerald-200' },
+];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,6 +26,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  function fillDemo(demoEmail: string) {
+    setEmail(demoEmail);
+    setPassword('password');
+    setError('');
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,15 +67,38 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-slate-100 px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center mb-8">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-slate-100 px-4 py-8">
+      <div className="w-full max-w-sm space-y-4">
+        <div className="flex flex-col items-center mb-6">
           <div className="w-14 h-14 rounded-2xl bg-indigo-600 flex items-center justify-center mb-3">
             <GraduationCap className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-slate-900">Claros</h1>
           <p className="text-sm text-slate-500 mt-1">School Attendance & Grade Management</p>
         </div>
+
+        {/* Demo quick-fill */}
+        <Card className="border-dashed border-amber-300 bg-amber-50/60">
+          <CardContent className="pt-3 pb-3">
+            <div className="flex items-center gap-1.5 mb-2.5">
+              <Zap className="w-3.5 h-3.5 text-amber-500" />
+              <span className="text-xs font-semibold text-amber-700 uppercase tracking-wide">Demo — click to fill</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {DEMO_ACCOUNTS.map((a) => (
+                <button
+                  key={a.email}
+                  type="button"
+                  onClick={() => fillDemo(a.email)}
+                  className={`text-xs font-medium px-2.5 py-1 rounded-full border transition-colors ${a.color} ${email === a.email ? 'ring-2 ring-offset-1 ring-current' : ''}`}
+                >
+                  {a.label}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-amber-600 mt-2 opacity-70">All passwords: <span className="font-mono font-semibold">password</span></p>
+          </CardContent>
+        </Card>
 
         <Card className="shadow-md">
           <CardHeader className="pb-4">
@@ -116,7 +156,7 @@ export default function LoginPage() {
           </CardContent>
         </Card>
 
-        <p className="text-center text-xs text-slate-400 mt-6">
+        <p className="text-center text-xs text-slate-400">
           ABC Primary School · Claros v1
         </p>
       </div>
